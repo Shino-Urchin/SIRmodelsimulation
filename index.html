@@ -8,27 +8,61 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f8fafc; }
-        .math-block {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 1.25rem;
-            border-radius: 0.5rem;
-        }
+        
         .explanation-text {
-            color: #94a3b8;
+            color: #475569;
             font-size: 0.85rem;
             margin-top: 0.25rem;
             font-family: sans-serif;
         }
-        /* スライダーの共通スタイル */
+        
+        /* スライダーのつまみの修正 */
         input[type=range] {
             -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 2.5rem; 
+            display: flex;
+            align-items: center;
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 0.6rem;
             background: #e2e8f0;
             border-radius: 9999px;
+            border: 1px solid #cbd5e1;
         }
-        input[type=range]::-webkit-slider-runnable-track {
-            height: 0.5rem;
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 1.5rem;
+            width: 1.5rem;
+            background-color: currentColor; /* 各項目のaccent-colorを反映 */
+            border-radius: 50%;
+            margin-top: -0.5rem; /* (0.6/2 - 1.5/2 + 補正) */
+            border: 3px solid #ffffff; /* 白い縁取りでコントラストを強化 */
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease;
+        }
+
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+
+        /* Firefox 用の修正 */
+        input[type=range]::-moz-range-track {
+            height: 0.6rem;
+            background: #e2e8f0;
+            border-radius: 9999px;
+            border: 1px solid #cbd5e1;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 1.5rem;
+            width: 1.5rem;
+            background-color: currentColor;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -47,23 +81,23 @@
                 <div class="space-y-6">
                     <div>
                         <label class="block text-sm font-medium text-slate-600">全人口 (N): <span id="val-totalPop" class="font-bold">1000</span>人</label>
-                        <input type="range" id="totalPop" min="100" max="5000" step="100" value="1000" class="w-full h-2 rounded-lg cursor-pointer accent-blue-600">
+                        <input type="range" id="totalPop" min="100" max="5000" step="100" value="1000" class="w-full cursor-pointer accent-blue-600 text-blue-600">
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-slate-600">初期感染者 (I₀): <span id="val-initialI" class="font-bold">10</span>人</label>
-                        <input type="range" id="initialI" min="1" max="100" step="1" value="10" class="w-full h-2 rounded-lg cursor-pointer accent-red-600">
+                        <input type="range" id="initialI" min="1" max="100" step="1" value="10" class="w-full cursor-pointer accent-red-600 text-red-600">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-600">感染率 (β): <span id="val-beta" class="font-bold">0.48</span></label>
-                        <input type="range" id="beta" min="0" max="1" step="0.01" value="0.48" class="w-full h-2 rounded-lg cursor-pointer accent-orange-500">
+                        <input type="range" id="beta" min="0" max="1" step="0.01" value="0.48" class="w-full cursor-pointer accent-orange-500 text-orange-500">
                         <p class="text-xs text-slate-400 mt-1">1日の間に、感染者が周囲の未感染者にうつす割合</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-600">回復率 (γ): <span id="val-gamma" class="font-bold">0.28</span></label>
-                        <input type="range" id="gamma" min="0.01" max="1" step="0.01" value="0.28" class="w-full h-2 rounded-lg cursor-pointer accent-green-600">
+                        <input type="range" id="gamma" min="0.01" max="1" step="0.01" value="0.28" class="w-full cursor-pointer accent-green-600 text-green-600">
                         <p class="text-xs text-slate-400 mt-1">1日の間に、感染者が治る（または隔離される）割合</p>
                     </div>
                 </div>
@@ -81,39 +115,43 @@
                     <canvas id="sirChart"></canvas>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-3 gap-4 text-center">
                     <div class="bg-blue-50 border-l-4 border-blue-600 p-3 rounded shadow-sm">
                         <p class="text-xs text-blue-700 font-bold">未感染者 (S)</p>
+                        <p class="text-[10px] text-blue-500 font-bold">───── (実線)</p>
                         <p id="stat-s" class="text-lg font-bold text-blue-900">-</p>
                     </div>
                     <div class="bg-red-50 border-l-4 border-red-600 p-3 rounded shadow-sm">
                         <p class="text-xs text-red-700 font-bold">感染者 (I)</p>
+                        <p class="text-[10px] text-red-500 font-bold">-- -- -- (破線)</p>
                         <p id="stat-i" class="text-lg font-bold text-red-900">-</p>
                     </div>
                     <div class="bg-green-50 border-l-4 border-green-600 p-3 rounded shadow-sm">
                         <p class="text-xs text-green-700 font-bold">回復・隔離 (R)</p>
+                        <p class="text-[10px] text-green-600 font-bold">············ (点線)</p>
                         <p id="stat-r" class="text-lg font-bold text-green-900">-</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-800 p-6 rounded-xl text-white">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <!-- 解説セクション（背景を明るい色に変更） -->
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 text-slate-800">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-slate-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                         計算式のやさしい解説
                     </h3>
                     <div class="space-y-4">
-                        <div>
-                            <div class="font-mono text-blue-400">dS/dt = -β · S · I / N</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <div class="font-mono text-blue-700 font-bold text-md">dS/dt = -β · S · I / N</div>
                             <p class="explanation-text">→ <b>【未感染者の減少】</b>：健康な人が感染者と出会って、新しく病気になるスピードです。マイナスがついているのは人数が減ることを意味します。</p>
                         </div>
-                        <div>
-                            <div class="font-mono text-red-400">dI/dt = β · S · I / N - γ · I</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <div class="font-mono text-red-700 font-bold text-md">dI/dt = β · S · I / N - γ · I</div>
                             <p class="explanation-text">→ <b>【感染者の増減】</b>：新しく病気になる人から、治って元気になる人を引いた値です。この値がプラスなら流行は拡大し、マイナスなら収束します。</p>
                         </div>
-                        <div>
-                            <div class="font-mono text-green-400">dR/dt = γ · I</div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <div class="font-mono text-green-700 font-bold text-md">dR/dt = γ · I</div>
                             <p class="explanation-text">→ <b>【回復者の増加】</b>：病気が治って、免疫がついたり隔離されたりするスピードです。現在の感染者が多いほど、ここへ移動する人も増えます。</p>
                         </div>
                     </div>
@@ -196,23 +234,41 @@
 
         function renderChart() {
             const labels = sirData.map(d => d.t);
+            const datasets = [
+                { 
+                    label: '未感染 (S)', 
+                    data: sirData.map(d => d.S), 
+                    borderColor: '#2563eb', 
+                    pointRadius: 0, 
+                    borderWidth: 3,
+                    borderDash: [] 
+                },
+                { 
+                    label: '感染者 (I)', 
+                    data: sirData.map(d => d.I), 
+                    borderColor: '#dc2626', 
+                    pointRadius: 0, 
+                    borderWidth: 3,
+                    borderDash: [10, 5] 
+                },
+                { 
+                    label: '回復者 (R)', 
+                    data: sirData.map(d => d.R), 
+                    borderColor: '#16a34a', 
+                    pointRadius: 0, 
+                    borderWidth: 3,
+                    borderDash: [2, 3] 
+                }
+            ];
+
             if (chart) {
                 chart.data.labels = labels;
-                chart.data.datasets[0].data = sirData.map(d => d.S);
-                chart.data.datasets[1].data = sirData.map(d => d.I);
-                chart.data.datasets[2].data = sirData.map(d => d.R);
+                chart.data.datasets = datasets;
                 chart.update('none');
             } else {
                 chart = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: '未感染 (S)', data: sirData.map(d => d.S), borderColor: '#2563eb', pointRadius: 0, borderWidth: 3 },
-                            { label: '感染者 (I)', data: sirData.map(d => d.I), borderColor: '#dc2626', pointRadius: 0, borderWidth: 3 },
-                            { label: '回復者 (R)', data: sirData.map(d => d.R), borderColor: '#16a34a', pointRadius: 0, borderWidth: 3 }
-                        ]
-                    },
+                    data: { labels: labels, datasets: datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
